@@ -1,0 +1,9 @@
+aioConfig {
+    publishingAio {
+        description = 'Slim Prefs Core Library'
+        labels = ['java','preferences']
+    }
+}
+
+apply plugin: 'java-lib-aio'
+apply plugin: 'publishing-aio'

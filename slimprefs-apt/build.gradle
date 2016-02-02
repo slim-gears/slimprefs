@@ -1,0 +1,21 @@
+import org.gradle.internal.jvm.Jvm
+
+aioConfig {
+    publishingAio {
+        description = 'Slim Prefs Annotation Processor'
+        labels = ['java','preferences','apt']
+    }
+}
+
+apply plugin: 'java-lib-aio'
+apply plugin: 'publishing-aio'
+
+dependencies {
+    compile "com.github.slim-gears:slimapt:$slimAptVersion"
+    compile project(':slimprefs-core')
+
+    testCompile "com.google.testing.compile:compile-testing:$compileTestingVersion"
+    testCompile "com.google.truth:truth:$googleTruthVersion"
+    testCompile "com.github.slim-gears:slimapt:$slimAptVersion:tests"
+    testCompile files(Jvm.current().getToolsJar())
+}

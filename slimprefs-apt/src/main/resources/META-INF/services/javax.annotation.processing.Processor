@@ -1,0 +1,2 @@
+com.slimgears.slimprefs.apt.PreferencesClassAnnotationProcessor
+com.slimgears.slimprefs.apt.BindPreferenceMemberAnnotationProcessor

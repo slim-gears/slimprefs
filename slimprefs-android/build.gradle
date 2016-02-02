@@ -1,0 +1,13 @@
+aioConfig {
+    publishingAio {
+        description = 'Slim Prefs Android Core Library'
+        labels = ['android','java','preferences']
+    }
+}
+
+apply plugin: 'android-lib-aio'
+apply plugin: 'publishing-aio'
+
+dependencies {
+    compile project(':slimprefs-core')
+}
