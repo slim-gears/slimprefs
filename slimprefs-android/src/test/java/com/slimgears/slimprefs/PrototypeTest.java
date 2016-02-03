@@ -31,14 +31,12 @@ import java.util.Date;
 public class PrototypeTest {
     private SharedPreferences preferences;
     private PreferenceProvider preferenceProvider;
-    private DummyPreferences dummyPreferences;
     private ClassBinding<DummyInjectionTarget> dummyClassBinding;
 
     @Before
     public void setUp() {
         preferences = PreferenceManager.getDefaultSharedPreferences(RuntimeEnvironment.application);
         preferenceProvider = new SharedPreferenceProvider(RuntimeEnvironment.application);
-        dummyPreferences = new GeneratedDummyPreferences(preferenceProvider);
         dummyClassBinding = GeneratedDummyInjectionTargetClassBinding.INSTANCE;
     }
 
@@ -81,5 +79,16 @@ public class PrototypeTest {
                 .putInt("DummyInjectionTarget.age", 30)
                 .apply();
         Assert.assertEquals(25, dummyInjectionTarget.age);
+    }
+
+    @Test
+    public void whenNoPreferenceExists_and_DefaultValueIsDefined_defaultIsWrittenToPreferences() {
+        DummyInjectionTarget dummyInjectionTarget = new DummyInjectionTarget();
+        PreferenceBinding binding = dummyClassBinding.bind(preferenceProvider, dummyInjectionTarget);
+        Assert.assertEquals(15, dummyInjectionTarget.age);
+        Assert.assertEquals(15, preferences.getInt("DummyInjectionTarget.age", 0));
+        Assert.assertFalse(preferences.contains("DummyInjectionTarget.name"));
+
+        binding.unbind();
     }
 }

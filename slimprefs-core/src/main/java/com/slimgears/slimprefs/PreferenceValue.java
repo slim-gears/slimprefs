@@ -10,6 +10,8 @@ import com.slimgears.slimprefs.internal.PreferenceObserver;
  */
 public interface PreferenceValue<T> {
     T get();
-    void set(T value);
+    boolean exists();
+    PreferenceValue<T> set(T value);
+    PreferenceValue<T> defaultValue(T value);
     PreferenceBinding observe(PreferenceObserver<T> observer);
 }

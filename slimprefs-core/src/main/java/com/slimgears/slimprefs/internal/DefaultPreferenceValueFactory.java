@@ -11,11 +11,17 @@ import com.slimgears.slimprefs.PreferenceValue;
 public class DefaultPreferenceValueFactory<T> implements PreferenceValueFactory<T> {
     private final DefaultPreferenceValue.ValueGetter<T> getter;
     private final DefaultPreferenceValue.ValueSetter<T> setter;
+    private final DefaultPreferenceValue.ValueExistence existence;
     private final DefaultPreferenceValue.ValueObservable<T> observable;
 
-    DefaultPreferenceValueFactory(DefaultPreferenceValue.ValueGetter<T> getter, DefaultPreferenceValue.ValueSetter<T> setter, DefaultPreferenceValue.ValueObservable<T> observable) {
+    DefaultPreferenceValueFactory(
+            DefaultPreferenceValue.ValueGetter<T> getter,
+            DefaultPreferenceValue.ValueSetter<T> setter,
+            DefaultPreferenceValue.ValueExistence existence,
+            DefaultPreferenceValue.ValueObservable<T> observable) {
         this.getter = getter;
         this.setter = setter;
+        this.existence = existence;
         this.observable = observable;
     }
 
@@ -25,6 +31,7 @@ public class DefaultPreferenceValueFactory<T> implements PreferenceValueFactory<
                 .key(key)
                 .getter(getter)
                 .setter(setter)
+                .existence(existence)
                 .observable(observable)
                 .build();
     }
@@ -36,6 +43,7 @@ public class DefaultPreferenceValueFactory<T> implements PreferenceValueFactory<
     public static class Builder<T> {
         private DefaultPreferenceValue.ValueGetter<T> getter;
         private DefaultPreferenceValue.ValueSetter<T> setter;
+        private DefaultPreferenceValue.ValueExistence existence;
         private DefaultPreferenceValue.ValueObservable<T> observable;
 
         public Builder<T> getter(DefaultPreferenceValue.ValueGetter<T> getter) {
@@ -48,13 +56,18 @@ public class DefaultPreferenceValueFactory<T> implements PreferenceValueFactory<
             return this;
         }
 
+        public Builder<T> existence(DefaultPreferenceValue.ValueExistence existence) {
+            this.existence = existence;
+            return this;
+        }
+
         public Builder<T> observable(DefaultPreferenceValue.ValueObservable<T> observable) {
             this.observable = observable;
             return this;
         }
 
         public DefaultPreferenceValueFactory<T> build() {
-            return new DefaultPreferenceValueFactory<>(getter, setter, observable);
+            return new DefaultPreferenceValueFactory<>(getter, setter, existence, observable);
         }
     }
 }

@@ -17,7 +17,9 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Types;
 
 /**
@@ -26,6 +28,10 @@ import javax.lang.model.util.Types;
  */
 @SupportedAnnotationTypes({"com.slimgears.slimprefs.BindPreference", "com.slimgears.slimprefs.GeneratePreferenceInjector"})
 public class BindPreferenceMemberAnnotationProcessor extends AnnotationProcessorBase {
+    private final LoadingCache<TypeElement, ClassBindingGenerator> classGenerators = CacheBuilder
+            .newBuilder()
+            .build(new ClassBindingGeneratorFactory());
+
     class ClassBindingGeneratorFactory extends CacheLoader<TypeElement, ClassBindingGenerator> {
         @Override
         public ClassBindingGenerator load(TypeElement key) {
@@ -40,18 +46,7 @@ public class BindPreferenceMemberAnnotationProcessor extends AnnotationProcessor
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        LoadingCache<TypeElement, ClassBindingGenerator> classGenerators = CacheBuilder
-                .newBuilder()
-                .build(new ClassBindingGeneratorFactory());
-
-        for (Element element : roundEnv.getElementsAnnotatedWith(BindPreference.class)) {
-            try {
-                ClassBindingGenerator generator = classGenerators.get((TypeElement)element.getEnclosingElement());
-                generator.addBinding(element);
-            } catch (ExecutionException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        processAnnotation(BindPreference.class, roundEnv);
 
         if (classGenerators.size() > 0) {
             try {
@@ -60,13 +55,7 @@ public class BindPreferenceMemberAnnotationProcessor extends AnnotationProcessor
                     generator.build();
                 }
 
-                for (Element element : roundEnv.getElementsAnnotatedWith(GeneratePreferenceInjector.class)) {
-                    TypeElement typeElement = (TypeElement)element;
-
-                    validateInjectorGeneratorElement(typeElement);
-                    InjectorGenerator injectorGenerator = new InjectorGenerator(processingEnv, typeElement, classGenerators.asMap().values());
-                    injectorGenerator.build();
-                }
+                processAnnotation(GeneratePreferenceInjector.class, roundEnv);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -75,9 +64,29 @@ public class BindPreferenceMemberAnnotationProcessor extends AnnotationProcessor
         return true;
     }
 
+    private boolean processMember(Element memberElement) throws ExecutionException {
+        classGenerators
+                .get((TypeElement)memberElement.getEnclosingElement())
+                .addBinding(memberElement);
+        return true;
+    }
+
     @Override
-    protected boolean processType(TypeElement typeElement) throws IOException {
-        return false;
+    protected boolean processMethod(ExecutableElement methodElement) throws ExecutionException {
+        return processMember(methodElement);
+    }
+
+    @Override
+    protected boolean processField(VariableElement fieldElement) throws ExecutionException {
+        return processMember(fieldElement);
+    }
+
+    @Override
+    protected boolean processType(TypeElement typeElement) throws ExecutionException, IOException {
+        validateInjectorGeneratorElement(typeElement);
+        InjectorGenerator injectorGenerator = new InjectorGenerator(processingEnv, typeElement, classGenerators.asMap().values());
+        injectorGenerator.build();
+        return true;
     }
 
     private void validateInjectorGeneratorElement(TypeElement typeElement) {

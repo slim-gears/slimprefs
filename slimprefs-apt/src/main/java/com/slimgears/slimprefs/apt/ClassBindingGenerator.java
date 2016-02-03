@@ -2,12 +2,14 @@
 // Refer to LICENSE.txt for license details
 package com.slimgears.slimprefs.apt;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.slimgears.slimapt.ClassGenerator;
 import com.slimgears.slimapt.TypeUtils;
 import com.slimgears.slimprefs.BindPreference;
 import com.slimgears.slimprefs.PreferenceBinding;
 import com.slimgears.slimprefs.PreferenceProvider;
+import com.slimgears.slimprefs.internal.AbstractClassBinding;
 import com.slimgears.slimprefs.internal.ClassBinding;
 import com.slimgears.slimprefs.internal.CompositePreferenceBinding;
 import com.slimgears.slimprefs.internal.PreferenceObserver;
@@ -21,6 +23,7 @@ import com.squareup.javapoet.TypeSpec;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
@@ -28,7 +31,6 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.naming.Binding;
 
 /**
  * Created by ditskovi on 1/31/2016.
@@ -43,46 +45,54 @@ public class ClassBindingGenerator extends ClassGenerator<ClassBindingGenerator>
         private final Element element;
         private final String bindingName;
         private final TypeName bindingType;
-        private final CodeBlock codeBlock;
+        private final Object defaultValue;
+        private final CodeBlock defaultValueCode;
+        private final CodeBlock observerCode;
 
-        private BindingDescriptor(Element element, TypeName bindingType, String bindingName, String codeTemplate) {
+        private BindingDescriptor(Element element, TypeName bindingType, String bindingName, Object defaultValue, CodeBlock defaultValueCode, CodeBlock observerCode) {
             this.element = element;
             this.bindingName = getBindingName(bindingName);
             this.bindingType = bindingType;
-            this.codeBlock = CodeBlock.builder().add(codeTemplate, element.getSimpleName().toString()).build();
+            this.defaultValueCode = defaultValueCode;
+            this.observerCode = observerCode;
+            this.defaultValue = defaultValue;
         }
 
         BindingDescriptor(VariableElement element) {
             this(element,
                  TypeName.get(element.asType()),
                  element.getSimpleName().toString(),
-                 "target.$L = value;");
+                 TypeUtils.defaultValue(TypeName.get(element.asType())),
+                 CodeBlock.builder().add("target.$L", element.getSimpleName()).build(),
+                 CodeBlock.builder().add("target.$L = value;", element.getSimpleName()).build());
         }
 
         BindingDescriptor(ExecutableElement element) {
             this(element,
                  TypeName.get(element.getParameters().get(0).asType()),
                  element.getParameters().get(0).getSimpleName().toString(),
-                 "target.$L(value);");
+                 null,
+                 CodeBlock.builder().add("null").build(),
+                 CodeBlock.builder().add("target.$L(value);", element.getSimpleName()).build());
         }
 
         CodeBlock build() {
             CodeBlock.Builder codeBuilder = CodeBlock.builder();
             TypeName boxedFieldType = TypeUtils.box(bindingType);
             codeBuilder
-                .indent()
-                .add("provider.getPreference($L, $T.class)",
-                        bindingName,
-                        boxedFieldType)
-                .add(".observe(new $T<$T>() {\n", PreferenceObserver.class, boxedFieldType)
-                .indent()
-                .add("@$T\n", Override.class)
-                .add("public void onChanged($T value) { ", boxedFieldType)
-                .add(codeBlock)
-                .add(" }\n")
-                .unindent()
-                .add("})")
-                .unindent();
+                    .indent()
+                    .add("bindMember(provider.getPreference($L, $T.class), ", bindingName, boxedFieldType)
+                    .add(defaultValueCode)
+                    .add(", $L, ", defaultValue)
+                    .add("new $T<$T>() {\n", PreferenceObserver.class, boxedFieldType)
+                    .indent()
+                    .add("@$T\n", Override.class)
+                    .add("public void onChanged($T value) { ", boxedFieldType)
+                    .add(observerCode)
+                    .add(" }\n")
+                    .unindent()
+                    .add("})")
+                    .unindent();
             return codeBuilder.build();
         }
 
@@ -105,10 +115,9 @@ public class ClassBindingGenerator extends ClassGenerator<ClassBindingGenerator>
         String packageName = TypeUtils.packageName(targetClass.getQualifiedName().toString());
         String className = targetClass.getSimpleName().toString();
         this.className(packageName, "Generated" + className + "ClassBinding")
-            .superClass(Object.class)
-            .addInterfaces(ParameterizedTypeName.get(
-                ClassName.get(ClassBinding.class),
-                targetTypeName));
+            .superClass(ParameterizedTypeName.get(
+                    ClassName.get(AbstractClassBinding.class),
+                    targetTypeName));
     }
 
     public TypeName getTargetTypeName() {

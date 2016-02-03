@@ -11,7 +11,7 @@ import java.util.Date;
 public class DummyInjectionTarget {
     boolean registered;
 
-    @BindPreference int age;
+    @BindPreference int age = 15;
     @BindPreference String name;
     @BindPreference Date installationDate;
 

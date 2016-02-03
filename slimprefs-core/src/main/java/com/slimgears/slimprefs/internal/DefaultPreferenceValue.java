@@ -15,12 +15,19 @@ public class DefaultPreferenceValue<T> implements PreferenceValue<T> {
     private final String key;
     private final ValueGetter<T> getter;
     private final ValueSetter<T> setter;
+    private final ValueExistence existence;
     private final ValueObservable<T> observable;
 
-    public DefaultPreferenceValue(String key, ValueGetter<T> getter, ValueSetter<T> setter, ValueObservable<T> observable) {
+    public DefaultPreferenceValue(
+            String key,
+            ValueGetter<T> getter,
+            ValueSetter<T> setter,
+            ValueExistence existence,
+            ValueObservable<T> observable) {
         this.key = key;
         this.getter = getter;
         this.setter = setter;
+        this.existence = existence;
         this.observable = observable;
     }
 
@@ -30,8 +37,20 @@ public class DefaultPreferenceValue<T> implements PreferenceValue<T> {
     }
 
     @Override
-    public void set(T value) {
+    public boolean exists() {
+        return existence != null && existence.exists(key);
+    }
+
+    @Override
+    public PreferenceValue<T> set(T value) {
         if (setter != null) setter.setValue(key, value);
+        return this;
+    }
+
+    @Override
+    public PreferenceValue<T> defaultValue(T value) {
+        if (value != null && !exists()) set(value);
+        return this;
     }
 
     @Override
@@ -45,6 +64,10 @@ public class DefaultPreferenceValue<T> implements PreferenceValue<T> {
 
     public static <T> Builder<T> builder() {
         return new Builder<>();
+    }
+
+    public interface ValueExistence {
+        boolean exists(String key);
     }
 
     public interface ValueGetter<T> {
@@ -63,6 +86,7 @@ public class DefaultPreferenceValue<T> implements PreferenceValue<T> {
         private String key;
         private ValueGetter<T> getter;
         private ValueSetter<T> setter;
+        private ValueExistence existence;
         private ValueObservable<T> observable;
 
         public Builder<T> key(String key) {
@@ -80,13 +104,18 @@ public class DefaultPreferenceValue<T> implements PreferenceValue<T> {
             return this;
         }
 
+        public Builder<T> existence(ValueExistence existence) {
+            this.existence = existence;
+            return this;
+        }
+
         public Builder<T> observable(ValueObservable<T> observable) {
             this.observable = observable;
             return this;
         }
 
         public DefaultPreferenceValue<T> build() {
-            return new DefaultPreferenceValue<>(key, getter, setter, observable);
+            return new DefaultPreferenceValue<>(key, getter, setter, existence, observable);
         }
     }
 }
