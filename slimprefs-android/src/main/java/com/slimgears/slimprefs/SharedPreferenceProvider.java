@@ -252,9 +252,18 @@ public class SharedPreferenceProvider implements PreferenceProvider {
 
     private <T> PreferenceValueFactory<T> getValueFactory(Class<T> valueType) {
         if (!valueFactories.containsKey(valueType)) {
-            throw new RuntimeException("Type " + valueType.getCanonicalName() + " is not supported");
+            return onValueFactoryNotFound(valueType);
         }
         //noinspection unchecked
         return (PreferenceValueFactory<T>)valueFactories.get(valueType);
+    }
+
+    protected <T> PreferenceValueFactory<T> onValueFactoryNotFound(Class<T> valueType) {
+        if (Serializable.class.isAssignableFrom(valueType)) {
+            //noinspection unchecked
+            return registerSerializable((Class)valueType);
+        }
+
+        throw new RuntimeException("Type " + valueType.getCanonicalName() + " is not supported");
     }
 }

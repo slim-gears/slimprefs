@@ -17,6 +17,7 @@ import org.robolectric.RobolectricGradleTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -33,6 +34,25 @@ public class SharedPreferencesProviderTest {
 
     interface Validator<T> {
         void assertEquals(T expected, T actual);
+    }
+
+    interface CustomSerializable extends Serializable {
+        String getFullName();
+    }
+
+    static class CustomSerializableImplementation implements CustomSerializable {
+        String firstName;
+        String lastName;
+
+        CustomSerializableImplementation(String firstName, String lastName) {
+            this.firstName = firstName;
+            this.lastName = lastName;
+        }
+
+        @Override
+        public String getFullName() {
+            return firstName + " " + lastName;
+        }
     }
 
     class MockObserver<T> implements PreferenceObserver<T> {
@@ -131,6 +151,20 @@ public class SharedPreferencesProviderTest {
         Assert.assertNotNull(restoredBundle);
         Assert.assertNotSame(bundle, restoredBundle);
         Assert.assertEquals(333, restoredBundle.getLong("test-item"));
+    }
+
+    @Test
+    public void getSerializablePreference_shouldReturnPreference() {
+        PreferenceValue<CustomSerializable> serializablePreferenceValue = provider.getPreference("test-custom-serializable", CustomSerializable.class);
+        Assert.assertNotNull(serializablePreferenceValue);
+        serializablePreferenceValue.set(new CustomSerializableImplementation("John", "Doe"));
+
+        PreferenceProvider newProvider = new SharedPreferenceProvider(RuntimeEnvironment.application);
+        serializablePreferenceValue = newProvider.getPreference("test-custom-serializable", CustomSerializable.class);
+        CustomSerializable value = serializablePreferenceValue.get();
+        Assert.assertNotNull(value);
+
+        Assert.assertEquals("John Doe", value.getFullName());
     }
 
     private <T> void testSetGetForType(Class<T> valueType, T value) {
