@@ -49,17 +49,15 @@ public class BindPreferenceMemberAnnotationProcessor extends AnnotationProcessor
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         processAnnotation(BindPreference.class, roundEnv);
 
-        if (classGenerators.size() > 0) {
-            try {
-                for (ClassBindingGenerator generator : classGenerators.asMap().values()) {
-                    System.out.println("Generating " + generator.getTypeName().simpleName());
-                    generator.build();
-                }
-
-                processAnnotation(PreferenceFactory.class, roundEnv);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+        try {
+            for (ClassBindingGenerator generator : classGenerators.asMap().values()) {
+                System.out.println("Generating " + generator.getTypeName().simpleName());
+                generator.build();
             }
+
+            processAnnotation(PreferenceFactory.class, roundEnv);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
         return true;
