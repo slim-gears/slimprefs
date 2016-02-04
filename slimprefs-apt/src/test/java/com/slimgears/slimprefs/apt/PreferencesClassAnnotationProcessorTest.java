@@ -32,7 +32,7 @@ public class PreferencesClassAnnotationProcessorTest extends AnnotationProcessin
     public void forGeneratePreferenceInjectorAnnotation_generatesPreferenceInjectorImplementation() {
         testAnnotationProcessing(
             processedWith(new BindPreferenceMemberAnnotationProcessor()),
-            inputFiles("DummyInjectionTarget.java", "DummyPreferenceInjector.java"),
-            expectedFiles("GeneratedDummyPreferenceInjector.java"));
+            inputFiles("DummyInjectionTarget.java", "DummyPreferenceInjectorFactory.java"),
+            expectedFiles("GeneratedDummyPreferenceInjectorFactory.java"));
     }
 }

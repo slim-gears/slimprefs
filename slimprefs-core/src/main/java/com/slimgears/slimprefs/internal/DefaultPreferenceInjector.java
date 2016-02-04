@@ -13,11 +13,12 @@ import java.util.Map;
  * Created by ditskovi on 1/31/2016.
  *
  */
-public class AbstractPreferenceInjector implements PreferenceInjector {
+class DefaultPreferenceInjector implements PreferenceInjector {
     private final PreferenceProvider preferenceProvider;
-    private final Map<Class, ClassBinding> classBindings = new HashMap<>();
+    private final Map<Class, ClassBinding> classBindings;
 
-    protected AbstractPreferenceInjector(PreferenceProvider preferenceProvider) {
+    DefaultPreferenceInjector(PreferenceProvider preferenceProvider, Map<Class, ClassBinding> classBindings) {
+        this.classBindings = classBindings;
         this.preferenceProvider = preferenceProvider;
     }
 
@@ -40,9 +41,5 @@ public class AbstractPreferenceInjector implements PreferenceInjector {
 
         //noinspection unchecked
         return (ClassBinding<? super T>)classBindings.get(cls);
-    }
-
-    protected <T> void addBinding(Class<T> targetClass, ClassBinding<T> binding) {
-        classBindings.put(targetClass, binding);
     }
 }

@@ -7,8 +7,9 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.slimgears.slimapt.AnnotationProcessorBase;
 import com.slimgears.slimprefs.BindPreference;
-import com.slimgears.slimprefs.GeneratePreferenceInjector;
+import com.slimgears.slimprefs.PreferenceFactory;
 import com.slimgears.slimprefs.PreferenceInjector;
+import com.slimgears.slimprefs.PreferenceInjectorFactory;
 
 import java.io.IOException;
 import java.util.Set;
@@ -26,7 +27,7 @@ import javax.lang.model.util.Types;
  * Created by ditskovi on 1/30/2016.
  *
  */
-@SupportedAnnotationTypes({"com.slimgears.slimprefs.BindPreference", "com.slimgears.slimprefs.GeneratePreferenceInjector"})
+@SupportedAnnotationTypes({"com.slimgears.slimprefs.BindPreference", "com.slimgears.slimprefs.PreferenceFactory"})
 public class BindPreferenceMemberAnnotationProcessor extends AnnotationProcessorBase {
     private final LoadingCache<TypeElement, ClassBindingGenerator> classGenerators = CacheBuilder
             .newBuilder()
@@ -55,7 +56,7 @@ public class BindPreferenceMemberAnnotationProcessor extends AnnotationProcessor
                     generator.build();
                 }
 
-                processAnnotation(GeneratePreferenceInjector.class, roundEnv);
+                processAnnotation(PreferenceFactory.class, roundEnv);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -84,16 +85,16 @@ public class BindPreferenceMemberAnnotationProcessor extends AnnotationProcessor
     @Override
     protected boolean processType(TypeElement typeElement) throws ExecutionException, IOException {
         validateInjectorGeneratorElement(typeElement);
-        InjectorGenerator injectorGenerator = new InjectorGenerator(processingEnv, typeElement, classGenerators.asMap().values());
-        injectorGenerator.build();
+        InjectorFactoryGenerator injectorFactoryGenerator = new InjectorFactoryGenerator(processingEnv, typeElement, classGenerators.asMap().values());
+        injectorFactoryGenerator.build();
         return true;
     }
 
     private void validateInjectorGeneratorElement(TypeElement typeElement) {
         Types typeUtils = processingEnv.getTypeUtils();
-        TypeElement injectorElement = processingEnv.getElementUtils().getTypeElement(PreferenceInjector.class.getCanonicalName());
-        if (!typeUtils.isAssignable(typeElement.asType(), injectorElement.asType())) {
-            throw new IllegalArgumentException(String.format("%1s does not extend %2s", typeElement.getQualifiedName(), injectorElement.getSimpleName()));
+        TypeElement injectorFactoryElement = processingEnv.getElementUtils().getTypeElement(PreferenceInjectorFactory.class.getCanonicalName());
+        if (!typeUtils.isAssignable(typeElement.asType(), injectorFactoryElement.asType())) {
+            throw new IllegalArgumentException(String.format("%1s does not extend %2s", typeElement.getQualifiedName(), injectorFactoryElement.getSimpleName()));
         }
     }
 }

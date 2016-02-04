@@ -2,8 +2,9 @@ package com.slimgears.slimprefs.example;
 
 import android.app.Application;
 
-import com.slimgears.slimprefs.GeneratePreferenceInjector;
+import com.slimgears.slimprefs.PreferenceFactory;
 import com.slimgears.slimprefs.PreferenceInjector;
+import com.slimgears.slimprefs.PreferenceInjectorFactory;
 import com.slimgears.slimprefs.PreferenceProvider;
 import com.slimgears.slimprefs.SharedPreferenceProvider;
 
@@ -12,8 +13,8 @@ import com.slimgears.slimprefs.SharedPreferenceProvider;
  *
  */
 public class App extends Application {
-    @GeneratePreferenceInjector
-    interface AppPreferenceInjector extends PreferenceInjector {}
+    @PreferenceFactory
+    interface AppPreferenceInjectorFactory extends PreferenceInjectorFactory {}
 
     private PreferenceInjector preferenceInjector;
 
@@ -25,6 +26,6 @@ public class App extends Application {
     public void onCreate() {
         super.onCreate();
         PreferenceProvider preferenceProvider = new SharedPreferenceProvider(this);
-        preferenceInjector = new GeneratedApp_AppPreferenceInjector(preferenceProvider);
+        preferenceInjector = GeneratedApp_AppPreferenceInjectorFactory.INSTANCE.createInjector(preferenceProvider);
     }
 }
