@@ -16,6 +16,8 @@ import java.util.Map;
 class DefaultPreferenceInjector implements PreferenceInjector {
     private final PreferenceProvider preferenceProvider;
     private final Map<Class, ClassBinding> classBindings;
+    private static final PreferenceBinding EMPTY_PREFERENCE_BINDING = () -> {};
+    private static final ClassBinding EMPTY_CLASS_BINDING = (provider, target) -> EMPTY_PREFERENCE_BINDING;
 
     DefaultPreferenceInjector(PreferenceProvider preferenceProvider, Map<Class, ClassBinding> classBindings) {
         this.classBindings = classBindings;
@@ -35,11 +37,7 @@ class DefaultPreferenceInjector implements PreferenceInjector {
             cls = cls.getSuperclass();
         }
 
-        if (!classBindings.containsKey(cls)) {
-            throw new RuntimeException("Class " + targetClass.getCanonicalName() + " does not have preference bindings");
-        }
-
         //noinspection unchecked
-        return (ClassBinding<? super T>)classBindings.get(cls);
+        return (ClassBinding<? super T>)classBindings.getOrDefault(cls, EMPTY_CLASS_BINDING);
     }
 }
