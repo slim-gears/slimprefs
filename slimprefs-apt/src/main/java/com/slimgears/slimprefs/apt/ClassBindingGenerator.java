@@ -2,7 +2,6 @@
 // Refer to LICENSE.txt for license details
 package com.slimgears.slimprefs.apt;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.slimgears.slimapt.ClassGenerator;
 import com.slimgears.slimapt.TypeUtils;
@@ -23,7 +22,6 @@ import com.squareup.javapoet.TypeSpec;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
@@ -42,16 +40,18 @@ public class ClassBindingGenerator extends ClassGenerator<ClassBindingGenerator>
     private final String targetClassSimpleName;
 
     class BindingDescriptor {
-        private final Element element;
-        private final String bindingName;
-        private final TypeName bindingType;
-        private final Object defaultValue;
-        private final CodeBlock defaultValueCode;
-        private final CodeBlock observerCode;
+        protected final Element element;
+        protected final String bindingName;
+        protected final TypeName bindingType;
+        protected final Object defaultValue;
+        protected final CodeBlock defaultValueCode;
+        protected final CodeBlock observerCode;
+        protected final BindPreference bindingAnnotation;
 
         private BindingDescriptor(Element element, TypeName bindingType, String bindingName, Object defaultValue, CodeBlock defaultValueCode, CodeBlock observerCode) {
             this.element = element;
-            this.bindingName = getBindingName(bindingName);
+            this.bindingAnnotation = element.getAnnotation(BindPreference.class);
+            this.bindingName = getBindingName(bindingAnnotation, bindingName);
             this.bindingType = bindingType;
             this.defaultValueCode = defaultValueCode;
             this.observerCode = observerCode;
@@ -74,30 +74,39 @@ public class ClassBindingGenerator extends ClassGenerator<ClassBindingGenerator>
                  null,
                  CodeBlock.builder().add("null").build(),
                  CodeBlock.builder().add("target.$L(value);", element.getSimpleName()).build());
+            if (bindingAnnotation.twoWay()) {
+                throw new RuntimeException(
+                        "Two way binding cannot be used with methods (method: " +
+                        element.getEnclosingElement().getSimpleName() + "." +
+                        element.getSimpleName() + ")");
+            }
         }
 
         CodeBlock build() {
             CodeBlock.Builder codeBuilder = CodeBlock.builder();
-            TypeName boxedFieldType = TypeUtils.box(bindingType);
-            codeBuilder
+            TypeName boxedBindingType = TypeUtils.box(bindingType);
+            build(codeBuilder, boxedBindingType);
+            return codeBuilder.build();
+        }
+
+        void build(CodeBlock.Builder builder, TypeName boxedBindingType) {
+            builder
                     .indent()
-                    .add("bindMember(provider.getPreference($L, $T.class), ", bindingName, boxedFieldType)
+                    .add("bindMember(provider.getPreference($L, $T.class), ", bindingName, boxedBindingType)
                     .add(defaultValueCode)
                     .add(", $L, ", defaultValue)
-                    .add("new $T<$T>() {\n", PreferenceObserver.class, boxedFieldType)
+                    .add("new $T<$T>() {\n", PreferenceObserver.class, boxedBindingType)
                     .indent()
                     .add("@$T\n", Override.class)
-                    .add("public void onChanged($T value) { ", boxedFieldType)
+                    .add("public void onChanged($T value) { ", boxedBindingType)
                     .add(observerCode)
                     .add(" }\n")
                     .unindent()
                     .add("})")
                     .unindent();
-            return codeBuilder.build();
         }
 
-        private String getBindingName(String defaultName) {
-            BindPreference binding = element.getAnnotation(BindPreference.class);
+        private String getBindingName(BindPreference binding, String defaultName) {
             if (!"".equals(binding.key())) {
                 return "\"" + binding.key() + "\"";
             } else if (binding.keyRes() != 0) {
@@ -105,6 +114,37 @@ public class ClassBindingGenerator extends ClassGenerator<ClassBindingGenerator>
             } else {
                 return "\"" + targetClassSimpleName + "." + defaultName + "\"";
             }
+        }
+    }
+
+    class TwoWayBindingDescriptor extends BindingDescriptor {
+        TwoWayBindingDescriptor(VariableElement element) {
+            super(element);
+        }
+
+        @Override
+        void build(CodeBlock.Builder builder, TypeName boxedBindingType) {
+            builder
+                    .indent()
+                        .add("bindMemberTwoWay(provider.getPreference($L, $T.class),\n", bindingName, boxedBindingType)
+                        .indent()
+                            .add("new ValueProvider<$T>() {\n", boxedBindingType)
+                            .indent()
+                                .add("@$T\n", Override.class)
+                                .add("public $T get() { return $L; }\n", boxedBindingType, defaultValueCode)
+                                .add("},\n")
+                            .unindent()
+                            .add("$L,\n", defaultValue)
+                            .add("new $T<$T>() {\n", PreferenceObserver.class, boxedBindingType)
+                            .indent()
+                                .add("@$T\n", Override.class)
+                                .add("public void onChanged($T value) { ", boxedBindingType)
+                                .add(observerCode)
+                                .add(" }\n")
+                            .unindent()
+                            .add("})")
+                        .unindent()
+                    .unindent();
         }
     }
 
@@ -125,7 +165,13 @@ public class ClassBindingGenerator extends ClassGenerator<ClassBindingGenerator>
     }
 
     public void addBinding(Element element) {
-        if (element instanceof VariableElement) bindings.add(new BindingDescriptor((VariableElement)element));
+        BindPreference bindingAnnotation = element.getAnnotation(BindPreference.class);
+        if (element instanceof VariableElement) {
+            VariableElement fieldElement = (VariableElement)element;
+            bindings.add(bindingAnnotation.twoWay()
+                         ? new TwoWayBindingDescriptor(fieldElement)
+                         : new BindingDescriptor(fieldElement));
+        }
         else if (element instanceof ExecutableElement) bindings.add(new BindingDescriptor((ExecutableElement)element));
         else throw new RuntimeException("Element type is not supported: " + element.getClass().getCanonicalName());
     }

@@ -9,6 +9,7 @@ class DummyInjectionTarget {
     @BindPreference int age;
     @BindPreference(key = "explicit_key_name") String name;
     @BindPreference(keyRes = 1234) Date installationDate;
+    @BindPreference(twoWay = true) int runCounter;
 
     @BindPreference
     void onRegisteredChanged(boolean registered) {

@@ -16,4 +16,5 @@ import java.lang.annotation.Target;
 public @interface BindPreference {
     String key() default "";
     int keyRes() default 0;
+    boolean twoWay() default false;
 }

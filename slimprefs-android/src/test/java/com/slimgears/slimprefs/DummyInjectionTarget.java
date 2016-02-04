@@ -14,6 +14,7 @@ public class DummyInjectionTarget {
     @BindPreference int age = 15;
     @BindPreference String name;
     @BindPreference Date installationDate;
+    @BindPreference(twoWay = true) int runCounter;
 
     @BindPreference void onRegisteredChanged(boolean registered) {
         this.registered = registered;

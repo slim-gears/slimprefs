@@ -91,4 +91,13 @@ public class PrototypeTest {
 
         binding.unbind();
     }
+
+    @Test
+    public void inTwoWayBinding_valueIsStored_onUnbind() {
+        DummyInjectionTarget dummyInjectionTarget = new DummyInjectionTarget();
+        PreferenceBinding binding = dummyClassBinding.bind(preferenceProvider, dummyInjectionTarget);
+        dummyInjectionTarget.runCounter = 5;
+        binding.unbind();
+        Assert.assertEquals(5, preferences.getInt("DummyInjectionTarget.runCounter", 0));
+    }
 }

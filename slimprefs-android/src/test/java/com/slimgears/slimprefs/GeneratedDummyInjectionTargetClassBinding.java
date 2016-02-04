@@ -39,6 +39,20 @@ public class GeneratedDummyInjectionTargetClassBinding extends AbstractClassBind
                         target.installationDate = value;
                     }
                 }),
+                bindMemberTwoWay(provider.getPreference("DummyInjectionTarget.runCounter", Integer.class),
+                                 new ValueProvider<Integer>() {
+                                     @Override
+                                     public Integer get() {
+                                         return target.runCounter;
+                                     }
+                                 },
+                                 0,
+                                 new PreferenceObserver<Integer>() {
+                                     @Override
+                                     public void onChanged(Integer value) {
+                                         target.runCounter = value;
+                                     }
+                                 }),
                 bindMember(provider.getPreference("DummyInjectionTarget.registered", Boolean.class), target.registered, false, new PreferenceObserver<Boolean>() {
                     @Override
                     public void onChanged(Boolean value) {
