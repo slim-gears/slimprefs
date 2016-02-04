@@ -46,11 +46,11 @@ public class SharedPreferenceProvider implements PreferenceProvider {
         To convert(From from);
     }
 
-    abstract class ConvertablePreferenceValueFactory<From, To> implements PreferenceValueFactory<From> {
+    abstract class ConvertiblePreferenceValueFactory<From, To> implements PreferenceValueFactory<From> {
         private final PreferenceValueFactory<To> destValueFactory;
         private final Class<To> destValueType;
 
-        protected ConvertablePreferenceValueFactory(Class<To> destValueType) {
+        protected ConvertiblePreferenceValueFactory(Class<To> destValueType) {
             this.destValueFactory = getValueFactory(destValueType);
             this.destValueType = destValueType;
         }
@@ -67,6 +67,7 @@ public class SharedPreferenceProvider implements PreferenceProvider {
                     .key(key)
                     .getter(getter)
                     .setter((key1, value) -> destValue.set(encode(value)))
+                    .existence(sharedPreferences::contains)
                     .observable(observable(getter))
                     .build();
         }
@@ -75,11 +76,11 @@ public class SharedPreferenceProvider implements PreferenceProvider {
         protected abstract From decode(To value);
     }
 
-    class CustomConvertablePreferenceValueFactory<From, To> extends ConvertablePreferenceValueFactory<From, To> {
+    class CustomConvertiblePreferenceValueFactory<From, To> extends ConvertiblePreferenceValueFactory<From, To> {
         private final Converter<From, To> encoder;
         private final Converter<To, From> decoder;
 
-        CustomConvertablePreferenceValueFactory(Class<To> destValueType, Converter<From, To> encoder, Converter<To, From> decoder) {
+        CustomConvertiblePreferenceValueFactory(Class<To> destValueType, Converter<From, To> encoder, Converter<To, From> decoder) {
             super(destValueType);
             this.encoder = encoder;
             this.decoder = decoder;
@@ -96,7 +97,7 @@ public class SharedPreferenceProvider implements PreferenceProvider {
         }
     }
 
-    abstract class EncodablePreferenceValueFactory<From> extends ConvertablePreferenceValueFactory<From, byte[]> {
+    abstract class EncodablePreferenceValueFactory<From> extends ConvertiblePreferenceValueFactory<From, byte[]> {
         protected EncodablePreferenceValueFactory() {
             super(byte[].class);
         }
@@ -158,9 +159,9 @@ public class SharedPreferenceProvider implements PreferenceProvider {
         registerProvider(Float.class, 0f, SharedPreferences::getFloat, SharedPreferences.Editor::putFloat);
         registerProvider(Boolean.class, false, SharedPreferences::getBoolean, SharedPreferences.Editor::putBoolean);
         registerProvider(Integer.class, 0, SharedPreferences::getInt, SharedPreferences.Editor::putInt);
-        registerConvertable(Date.class, Long.class, Date::getTime, Date::new);
-        registerConvertable(byte[].class, String.class, bytes -> Base64.encodeToString(bytes, Base64.DEFAULT), str -> Base64.decode(str, Base64.DEFAULT));
-        registerConvertable(Double.class, String.class, Object::toString, Double::parseDouble);
+        registerConvertible(Date.class, Long.class, Date::getTime, Date::new);
+        registerConvertible(byte[].class, String.class, bytes -> Base64.encodeToString(bytes, Base64.DEFAULT), str -> Base64.decode(str, Base64.DEFAULT));
+        registerConvertible(Double.class, String.class, Object::toString, Double::parseDouble);
         registerParcelable(Bundle.class, Bundle.CREATOR);
     }
 
@@ -224,8 +225,8 @@ public class SharedPreferenceProvider implements PreferenceProvider {
         return valueFactory;
     }
 
-    protected <From, To> PreferenceValueFactory<From> registerConvertable(Class<From> fromValueType, Class<To> toValueType, Converter<From, To> encoder, Converter<To, From> decoder) {
-        return registerProvider(fromValueType, new CustomConvertablePreferenceValueFactory<>(toValueType, encoder, decoder));
+    protected <From, To> PreferenceValueFactory<From> registerConvertible(Class<From> fromValueType, Class<To> toValueType, Converter<From, To> encoder, Converter<To, From> decoder) {
+        return registerProvider(fromValueType, new CustomConvertiblePreferenceValueFactory<>(toValueType, encoder, decoder));
     }
 
     protected <T extends Serializable> PreferenceValueFactory<T> registerSerializable(Class<T> valueType) {
