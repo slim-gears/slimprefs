@@ -18,9 +18,11 @@ import javax.lang.model.element.TypeElement;
 public class PreferencesClassAnnotationProcessor extends AnnotationProcessorBase {
     @Override
     protected boolean processType(TypeElement typeElement) throws IOException {
-        String fullname = typeElement.getQualifiedName().toString();
+        String qualifiedName = TypeUtils.qualifiedName(typeElement);
+        String simpleName = "Generated" + TypeUtils.simpleName(qualifiedName).replace('$', '_');
+        String packageName = TypeUtils.packageName(qualifiedName);
         new PreferencesClassGenerator(processingEnv, TypeUtils.getTypeName(typeElement))
-                .className(TypeUtils.packageName(fullname), "Generated" + TypeUtils.simpleName(fullname))
+                .className(packageName, simpleName)
                 .build();
         return true;
     }
