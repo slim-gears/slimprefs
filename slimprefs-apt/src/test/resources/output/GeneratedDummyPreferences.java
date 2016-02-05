@@ -31,6 +31,11 @@ class GeneratedDummyPreferences implements DummyPreferences {
     }
 
     @Override
+    public boolean hasInstallationDate() {
+        return installationDatePreference.exists();
+    }
+
+    @Override
     public int getAge() {
         return agePreference.get();
     }
@@ -38,6 +43,11 @@ class GeneratedDummyPreferences implements DummyPreferences {
     @Override
     public void setAge(int age) {
         agePreference.set(age);
+    }
+
+    @Override
+    public void removeAge() {
+        agePreference.remove();
     }
 
     @Override
@@ -51,6 +61,16 @@ class GeneratedDummyPreferences implements DummyPreferences {
     }
 
     @Override
+    public boolean containsRegistered() {
+        return registeredPreference.exists();
+    }
+
+    @Override
+    public void removeRegistered() {
+        registeredPreference.remove();
+    }
+
+    @Override
     public String getName() {
         return namePreference.get();
     }
@@ -58,5 +78,15 @@ class GeneratedDummyPreferences implements DummyPreferences {
     @Override
     public void setName(String name) {
         namePreference.set(name);
+    }
+
+    @Override
+    public boolean hasName() {
+        return namePreference.exists();
+    }
+
+    @Override
+    public void removeName() {
+        namePreference.remove();
     }
 }

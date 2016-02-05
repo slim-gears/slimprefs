@@ -16,17 +16,20 @@ public class DefaultPreferenceValue<T> implements PreferenceValue<T> {
     private final ValueGetter<T> getter;
     private final ValueSetter<T> setter;
     private final ValueExistence existence;
+    private final ValueRemover remover;
     private final ValueObservable<T> observable;
 
     public DefaultPreferenceValue(
             String key,
             ValueGetter<T> getter,
             ValueSetter<T> setter,
+            ValueRemover remover,
             ValueExistence existence,
             ValueObservable<T> observable) {
         this.key = key;
         this.getter = getter;
         this.setter = setter;
+        this.remover = remover;
         this.existence = existence;
         this.observable = observable;
     }
@@ -44,6 +47,12 @@ public class DefaultPreferenceValue<T> implements PreferenceValue<T> {
     @Override
     public PreferenceValue<T> set(T value) {
         if (setter != null) setter.setValue(key, value);
+        return this;
+    }
+
+    @Override
+    public PreferenceValue<T> remove() {
+        if (remover != null) remover.removeValue(key);
         return this;
     }
 
@@ -78,6 +87,10 @@ public class DefaultPreferenceValue<T> implements PreferenceValue<T> {
         void setValue(String key, T value);
     }
 
+    public interface ValueRemover {
+        void removeValue(String key);
+    }
+
     public interface ValueObservable<T> {
         PreferenceBinding observe(String key, PreferenceObserver<T> observer);
     }
@@ -86,6 +99,7 @@ public class DefaultPreferenceValue<T> implements PreferenceValue<T> {
         private String key;
         private ValueGetter<T> getter;
         private ValueSetter<T> setter;
+        private ValueRemover remover;
         private ValueExistence existence;
         private ValueObservable<T> observable;
 
@@ -104,6 +118,11 @@ public class DefaultPreferenceValue<T> implements PreferenceValue<T> {
             return this;
         }
 
+        public Builder<T> remover(ValueRemover remover) {
+            this.remover = remover;
+            return this;
+        }
+
         public Builder<T> existence(ValueExistence existence) {
             this.existence = existence;
             return this;
@@ -115,7 +134,7 @@ public class DefaultPreferenceValue<T> implements PreferenceValue<T> {
         }
 
         public DefaultPreferenceValue<T> build() {
-            return new DefaultPreferenceValue<>(key, getter, setter, existence, observable);
+            return new DefaultPreferenceValue<>(key, getter, setter, remover, existence, observable);
         }
     }
 }

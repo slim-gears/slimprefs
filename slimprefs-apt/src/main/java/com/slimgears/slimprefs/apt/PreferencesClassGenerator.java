@@ -53,7 +53,7 @@ public class PreferencesClassGenerator extends ClassGenerator<PreferencesClassGe
                     prop.getName(),
                     TypeUtils.box(prop.getType()));
 
-            if (prop.hasGetter()) {
+            if (prop.hasGet()) {
                 builder.addMethod(MethodSpec
                         .methodBuilder(prop.getGetterName())
                         .addAnnotation(Override.class)
@@ -63,13 +63,32 @@ public class PreferencesClassGenerator extends ClassGenerator<PreferencesClassGe
                         .build());
             }
 
-            if (prop.hasSetter()) {
+            if (prop.hasSet()) {
                 builder.addMethod(MethodSpec
                         .methodBuilder(prop.getSetterName())
                         .addAnnotation(Override.class)
                         .addModifiers(Modifier.PUBLIC)
                         .addParameter(prop.getType(), prop.getName())
                         .addCode("$L.set($L);\n", preferenceFieldName, prop.getName())
+                        .build());
+            }
+
+            if (prop.hasContains()) {
+                builder.addMethod(MethodSpec
+                        .methodBuilder(prop.getContainsName())
+                        .addAnnotation(Override.class)
+                        .addModifiers(Modifier.PUBLIC)
+                        .returns(boolean.class)
+                        .addCode("return $L.exists();\n", preferenceFieldName)
+                        .build());
+            }
+
+            if (prop.hasRemove()) {
+                builder.addMethod(MethodSpec
+                        .methodBuilder(prop.getRemoverName())
+                        .addAnnotation(Override.class)
+                        .addModifiers(Modifier.PUBLIC)
+                        .addCode("$L.remove();\n", preferenceFieldName)
                         .build());
             }
         }

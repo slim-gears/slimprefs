@@ -67,6 +67,7 @@ public class SharedPreferenceProvider implements PreferenceProvider {
                     .key(key)
                     .getter(getter)
                     .setter((key1, value) -> destValue.set(encode(value)))
+                    .remover(key1 -> sharedPreferences.edit().remove(key1).apply())
                     .existence(sharedPreferences::contains)
                     .observable(observable(getter))
                     .build();
@@ -211,6 +212,7 @@ public class SharedPreferenceProvider implements PreferenceProvider {
         return registerProvider(valueType, DefaultPreferenceValueFactory.<T>builder()
                 .getter(getter(getter, defaultValue))
                 .setter(setter(setter))
+                .remover(key -> sharedPreferences.edit().remove(key).apply())
                 .existence(sharedPreferences::contains)
                 .observable(observable(getter, defaultValue))
                 .build());

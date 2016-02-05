@@ -4,6 +4,7 @@ package com.slimgears.slimprefs.apt;
 
 import com.annimon.stream.Collectors;
 import com.annimon.stream.Stream;
+import com.google.common.collect.ImmutableMap;
 import com.slimgears.slimapt.ElementVisitorBase;
 import com.slimgears.slimapt.TypeUtils;
 import com.squareup.javapoet.TypeName;
@@ -20,14 +21,30 @@ import javax.lang.model.element.ExecutableElement;
  */
 public class PropertyFinder extends ElementVisitorBase<Void, Void> {
     private final Map<String, PropertyDescriptor> properties = new HashMap<>();
+    private final static Map<String, PropertyDescriptorInitializer> PROPERTY_INITIALIZERS =
+            ImmutableMap.<String, PropertyDescriptorInitializer>builder()
+                    .put("get", PropertyDescriptor::getter)
+                    .put("is", PropertyDescriptor::getter)
+                    .put("set", PropertyDescriptor::setter)
+                    .put("has", PropertyDescriptor::containsWith)
+                    .put("contains", PropertyDescriptor::containsWith)
+                    .put("remove", PropertyDescriptor::removeWith)
+                    .put("clear", PropertyDescriptor::removeWith)
+                    .build();
+
+    interface PropertyDescriptorInitializer {
+        void setMethod(PropertyDescriptor propertyDescriptor, ExecutableElement method);
+    }
 
     class PropertyDescriptor {
-        String name;
-        ExecutableElement getter;
-        ExecutableElement setter;
+        private String name;
+        private ExecutableElement getter;
+        private ExecutableElement setter;
+        private ExecutableElement remover;
+        private ExecutableElement existence;
 
         TypeName getType() {
-            if (hasGetter()) {
+            if (hasGet()) {
                 return TypeName.get(getter.getReturnType());
             } else {
                 return TypeName.get(setter.getParameters().get(0).asType());
@@ -35,52 +52,75 @@ public class PropertyFinder extends ElementVisitorBase<Void, Void> {
         }
 
         String getGetterName() {
-            return hasGetter() ? getter.getSimpleName().toString() : null;
+            return hasGet() ? getter.getSimpleName().toString() : null;
         }
 
         String getSetterName() {
-            return hasSetter() ? setter.getSimpleName().toString() : null;
+            return hasSet() ? setter.getSimpleName().toString() : null;
         }
 
-        boolean hasGetter() {
+        String getRemoverName() {
+            return hasRemove() ? remover.getSimpleName().toString() : null;
+        }
+
+        String getContainsName() {
+            return hasContains() ? existence.getSimpleName().toString() : null;
+        }
+
+        boolean hasGet() {
             return getter != null;
         }
 
-        boolean hasSetter() {
+        boolean hasSet() {
             return setter != null;
+        }
+
+        boolean hasRemove() {
+            return remover != null;
+        }
+
+        boolean hasContains() {
+            return existence != null;
         }
 
         String getName() {
             return TypeUtils.toCamelCase(name);
+        }
+
+        void setter(ExecutableElement setter) {
+            this.setter = setter;
+        }
+
+        void getter(ExecutableElement getter) {
+            this.getter = getter;
+        }
+
+        void removeWith(ExecutableElement remover) {
+            this.remover = remover;
+        }
+
+        void containsWith(ExecutableElement existence) {
+            this.existence = existence;
         }
     }
 
     @Override
     public Void visitExecutable(ExecutableElement element, Void param) {
         String name = element.getSimpleName().toString();
-        if (name.startsWith("get")) {
-            visitGetter(element, name.substring(3));
-        } else if (name.startsWith("is")) {
-            visitGetter(element, name.substring(2));
-        } else if (name.startsWith("set")) {
-            visitSetter(element, name.substring(3));
+        String prefix = getFirstWord(name);
+        String propName = name.substring(prefix.length());
+
+        PropertyDescriptorInitializer initializer = PROPERTY_INITIALIZERS.getOrDefault(prefix, null);
+        if (initializer != null) {
+            initializer.setMethod(getDescriptor(propName), element);
         }
+
         return null;
     }
 
     public Collection<PropertyDescriptor> getProperties() {
         return Stream.of(properties.values())
                 .collect(Collectors.toList());
-    }
-
-    private void visitGetter(ExecutableElement getter, String name) {
-        PropertyDescriptor descriptor = getDescriptor(name);
-        descriptor.getter = getter;
-    }
-
-    private void visitSetter(ExecutableElement setter, String name) {
-        PropertyDescriptor descriptor = getDescriptor(name);
-        descriptor.setter = setter;
     }
 
     private PropertyDescriptor getDescriptor(String name) {
@@ -91,5 +131,11 @@ public class PropertyFinder extends ElementVisitorBase<Void, Void> {
             properties.put(name, descriptor);
         }
         return descriptor;
+    }
+
+    private static String getFirstWord(String name) {
+        int index = 0;
+        while (Character.isLowerCase(name.charAt(index))) ++index;
+        return name.substring(0, index);
     }
 }

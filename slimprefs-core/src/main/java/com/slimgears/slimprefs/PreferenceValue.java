@@ -12,6 +12,7 @@ public interface PreferenceValue<T> {
     T get();
     boolean exists();
     PreferenceValue<T> set(T value);
+    PreferenceValue<T> remove();
     PreferenceValue<T> defaultValue(T value);
     PreferenceBinding observe(PreferenceObserver<T> observer);
 }
