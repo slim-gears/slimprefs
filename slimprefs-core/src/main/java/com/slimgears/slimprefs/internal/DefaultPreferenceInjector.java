@@ -38,6 +38,6 @@ class DefaultPreferenceInjector implements PreferenceInjector {
         }
 
         //noinspection unchecked
-        return (ClassBinding<? super T>)classBindings.getOrDefault(cls, EMPTY_CLASS_BINDING);
+        return cls != Object.class ? classBindings.get(cls) : EMPTY_CLASS_BINDING;
     }
 }

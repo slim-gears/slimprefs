@@ -110,9 +110,8 @@ public class PropertyFinder extends ElementVisitorBase<Void, Void> {
         String prefix = getFirstWord(name);
         String propName = name.substring(prefix.length());
 
-        PropertyDescriptorInitializer initializer = PROPERTY_INITIALIZERS.getOrDefault(prefix, null);
-        if (initializer != null) {
-            initializer.setMethod(getDescriptor(propName), element);
+        if (PROPERTY_INITIALIZERS.containsKey(prefix)) {
+            PROPERTY_INITIALIZERS.get(prefix).setMethod(getDescriptor(propName), element);
         }
 
         return null;
@@ -124,12 +123,10 @@ public class PropertyFinder extends ElementVisitorBase<Void, Void> {
     }
 
     private PropertyDescriptor getDescriptor(String name) {
-        PropertyDescriptor descriptor = properties.getOrDefault(name, null);
-        if (descriptor == null) {
-            descriptor = new PropertyDescriptor();
-            descriptor.name = name;
-            properties.put(name, descriptor);
-        }
+        if (properties.containsKey(name)) return properties.get(name);
+        PropertyDescriptor descriptor = new PropertyDescriptor();
+        descriptor.name = name;
+        properties.put(name, descriptor);
         return descriptor;
     }
 
